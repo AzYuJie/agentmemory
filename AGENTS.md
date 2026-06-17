@@ -114,6 +114,54 @@ Hook scripts in `src/hooks/` are standalone Node.js scripts (no iii-sdk import).
 - Test files go in `test/` with `.test.ts` extension
 - Follow existing patterns in `test/crystallize.test.ts` for function tests
 
+## Local Deployment Ops (fork maintenance)
+
+This repo is maintained as a local fork (upstream: rohitg00/agentmemory, fork: AzYuJie/agentmemory) and rebuilt/redeployed frequently. The hazards below are specific to that workflow.
+
+### Mandatory deploy sequence — `am-redeploy.sh`
+
+**Never `pkill` / `agentmemory stop` alone.** macOS launchd keeps agentmemory alive via `~/Library/LaunchAgents/com.aizen.agentmemory.plist` (`KeepAlive=true`, `ThrottleInterval=10`). A bare `pkill` causes launchd to respawn a fresh worker within 10s; if a build/redeploy is mid-flight, multiple workers fight over the same iii-engine → routes register to a stale worker → `GET /agentmemory/livez` returns 404 → the dashboard appears "broken" and is easily misread as data loss.
+
+Use the pinned helper instead:
+```bash
+~/.agentmemory/bin/am-redeploy.sh           # build + npm link + restart
+~/.agentmemory/bin/am-redeploy.sh --no-build # restart only
+```
+The script enforces the only correct order: **launchctl unload → stop + pkill residue → wait for port 3111 free → build/link → launchctl load → wait for health → verify data integrity (slots chars + session count before vs after)**. If integrity regresses it prints the snapshot-restore command.
+
+### "API unreachable" ≠ "data loss"
+
+Before concluding data is gone, check the physical store:
+```bash
+ls -la ~/.agentmemory/data/state_store.db/   # bin file mtimes tell you if a scope was overwritten
+```
+The viewer returning a blank page or `livez` 404 almost always means a worker/routing race, not corruption. Resolve with `am-redeploy.sh --no-build` first.
+
+## Data Safety (fork-local fixes)
+
+Several upstream bugs silently destroy data on restart; the fixes below are load-bearing for local maintenance and must not be regressed.
+
+### `seedDefaults` must use `kv.list`, never `kv.get`
+`src/functions/slots.ts::seedDefaults` runs on every boot to seed default slots. The upstream version checked existence with `kv.get` — but iii-engine's `kv.get` is unreliable during early startup (state store not fully ready, returns null for existing keys). The result: every restart re-seeded slots with empty templates, **wiping user content**. Fix: build a label set from `kv.list(KV.slots)` + `kv.list(KV.globalSlots)` and skip any label already present. If `kv.list` itself throws, skip the whole seed (outer `.catch`) rather than overwrite.
+
+### `session/start` is idempotent via `kv.list`
+`src/triggers/api.ts::api::session::start` must NOT reset `observationCount` / `startedAt` / `status` when the session already exists (used for project-identifier migration). Implementation looks up the existing session through `kv.list(KV.sessions).find(s => s.id === sessionId)` and merges only `project` / `cwd` / `updatedAt`. Do not switch this back to `kv.get` — same early-startup null bug.
+
+### Project identifier = `basename(cwd)`
+`src/hooks/_project.ts::resolveProject` returns `AGENTMEMORY_PROJECT_NAME` env or `basename(cwd)` — **no git toplevel resolution**. The Pi extension (`~/.pi/agent/extensions/agentmemory/index.ts`) sets `currentProject = path.basename(cwd)` while keeping the full path in a separate `currentCwd`. Do not reintroduce `git rev-parse --show-toplevel`; project IDs must be plain folder names.
+
+### Data dir lives outside the repo
+`iii-config.yaml` points the state store at absolute paths under `~/.agentmemory/data/` (not `./data/`). This survives `git clean -fdx` and repo re-clones. Keep these paths absolute.
+
+### Snapshots cover all 15 scopes
+`src/functions/snapshot.ts::mem::snapshot-create` / `mem::snapshot-restore` export and re-import: sessions, memories, graphNodes, observations, accessLogs, **slots, globalSlots, lessons, actions, crystals, audit, insights, signals, checkpoints, sentinels, sketches, routines**. When adding a new KV scope that holds user data, add it to both create and restore (and to `SnapshotMeta.stats`). Sessions are filtered to drop entries missing `id` before serializing, so a single corrupt row can no longer poison the snapshot.
+
+## iii-engine Pitfalls
+
+- **`kv.get` is unreliable at boot.** During early startup it can return null for keys that exist. For any existence check that gates an overwrite (seed defaults, idempotent upserts), prefer `kv.list` + in-memory lookup. Request-time reads inside an already-warm handler are fine.
+- **Multiple workers corrupt routing.** One iii-engine + N agentmemory workers = the HTTP routes may bind to whichever worker registered last, breaking `livez`/health. Always ensure exactly one worker (see `am-redeploy.sh`).
+- **SIGKILL before flush can drop KV writes.** Prefer `agentmemory stop` (graceful) over `kill -9`; reserve `kill -9` for unresponsive residue after `stop`, and always pair it with `am-redeploy.sh`'s port-wait gate.
+
 ## Current Stats (v0.9.16)
 
 - 53 MCP tools (8 visible by default, `AGENTMEMORY_TOOLS=all` for all)
