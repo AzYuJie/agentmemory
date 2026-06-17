@@ -582,17 +582,21 @@ export function registerApiTriggers(
           ? body.agentId.trim().slice(0, 128)
           : undefined;
       const agentId = requestAgentId ?? getAgentId();
-      const session: Session = {
-        id: sessionId,
-        project,
-        cwd,
-        startedAt: new Date().toISOString(),
-        status: "active",
-        observationCount: 0,
-        ...(title ? { summary: title.slice(0, 200) } : {}),
-        ...(title ? { firstPrompt: title.slice(0, 200) } : {}),
-        ...(agentId ? { agentId } : {}),
-      };
+      const allSessions = await kv.list<Session>(KV.sessions);
+      const existing = allSessions.find((s) => s.id === sessionId);
+      const session: Session = existing
+        ? { ...existing, project, cwd, updatedAt: new Date().toISOString() }
+        : {
+            id: sessionId,
+            project,
+            cwd,
+            startedAt: new Date().toISOString(),
+            status: "active",
+            observationCount: 0,
+            ...(title ? { summary: title.slice(0, 200) } : {}),
+            ...(title ? { firstPrompt: title.slice(0, 200) } : {}),
+            ...(agentId ? { agentId } : {}),
+          };
       await kv.set(KV.sessions, sessionId, session);
       const contextResult = await sdk.trigger<
         { sessionId: string; project: string },
