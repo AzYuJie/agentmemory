@@ -2584,7 +2584,7 @@
           '<div><a class="empty-link" href="https://github.com/rohitg00/agentmemory#memories" target="_blank" rel="noopener">Memory types &rarr;</a></div>' +
           '</div>';
       } else {
-        html += '<table><tr><th>Title</th><th>Type</th><th>Strength</th><th>Version</th><th>Updated</th><th>Actions</th></tr>';
+        html += '<table><tr><th>Title</th><th>Type</th><th>Project</th><th>Strength</th><th>Version</th><th>Updated</th><th>Actions</th></tr>';
         filtered.forEach(function(m) {
           var badgeClass = TYPE_BADGES[m.type] || 'badge-muted';
           var rawStrength = m.strength || 0;
@@ -2607,6 +2607,7 @@
           }
           html += '</td>';
           html += '<td><span class="badge ' + badgeClass + '">' + esc(m.type) + '</span></td>';
+          html += '<td style="font-size:12px;color:var(--ink-muted);">' + esc(m.project || '-') + '</td>';
           html += '<td><div class="strength-bar"><div class="fill" style="width:' + strength + '%;background:' + barColor + '"></div></div> <span style="font-size:10px;color:var(--ink-faint);font-family:var(--font-mono);">' + strength + '%</span></td>';
           html += '<td style="color:var(--ink-muted);font-family:var(--font-mono);font-size:12px;">v' + (m.version || 1) + '</td>';
           html += '<td style="font-size:11px;color:var(--ink-faint);font-family:var(--font-mono);">' + esc(formatTime(m.updatedAt)) + '</td>';
@@ -2674,22 +2675,28 @@
         typeField = item.type || '';
         meta = '<span>Type: ' + esc(item.type || '-') + '</span>' +
                '<span>v' + (item.version || 1) + '</span>' +
-               '<span>Strength: ' + (Math.round((item.strength || 0) * 100)) + '%</span>';
+               '<span>Strength: ' + (Math.round((item.strength || 0) * 100)) + '%</span>' +
+               '<span>Project: ' + esc(item.project || '-') + '</span>';
+        extraFields = '<label>Project</label><textarea id="modal-project" rows="1">' + esc(item.project || '') + '</textarea>';
       } else if (type === 'lesson') {
         contentLabel = 'Lesson';
         contentField = item.content || '';
         titleField = item.context || '';
         meta = '<span>Confidence: ' + Math.round((item.confidence || 0) * 100) + '%</span>' +
                '<span>Reinforcements: ' + (item.reinforcements || 0) + '</span>' +
-               '<span>Source: ' + esc(item.source || '-') + '</span>';
-        extraFields = '<label>Tags</label><textarea id="modal-tags" rows="2">' + esc((item.tags || []).join(', ')) + '</textarea>';
+               '<span>Source: ' + esc(item.source || '-') + '</span>' +
+               '<span>Project: ' + esc(item.project || '-') + '</span>';
+        extraFields = '<label>Project</label><textarea id="modal-project" rows="1">' + esc(item.project || '') + '</textarea>'
+                     + '<label>Tags</label><textarea id="modal-tags" rows="2">' + esc((item.tags || []).join(', ')) + '</textarea>';
       } else if (type === 'action') {
         contentLabel = 'Description';
         contentField = item.description || '';
         titleField = item.title || '';
         meta = '<span>Status: ' + esc(item.status || '-') + '</span>' +
                '<span>Priority: ' + (item.priority || '-') + '</span>' +
-               '<span>Tags: ' + esc((item.tags || []).join(', ')) + '</span>';
+               '<span>Tags: ' + esc((item.tags || []).join(', ')) + '</span>' +
+               '<span>Project: ' + esc(item.project || '-') + '</span>';
+        extraFields = '<label>Project</label><textarea id="modal-project" rows="1">' + esc(item.project || '') + '</textarea>';
       } else if (type === 'crystal') {
         canEdit = false;
         contentLabel = 'Narrative';
@@ -2721,10 +2728,12 @@
     async function saveDetail(type, id) {
       var contentEl = document.getElementById('modal-content');
       var content = contentEl ? contentEl.value : '';
+      var projEl = document.getElementById('modal-project');
+      var project = projEl ? projEl.value.trim() : '';
 
       if (type === 'memory') {
         var title = (document.querySelector('#modal h3') || {}).textContent || '';
-        await apiPost('remember', { title: title, content: content, type: 'fact' });
+        await apiPost('remember', { title: title, content: content, type: 'fact', project: project || undefined });
         state.memories.loaded = false;
         closeModal();
         loadMemories();
@@ -2732,12 +2741,12 @@
         var tagsEl = document.getElementById('modal-tags');
         var tags = tagsEl ? tagsEl.value.split(',').map(function(t) { return t.trim(); }).filter(Boolean) : [];
         var context = (document.querySelector('#modal h3') || {}).textContent || '';
-        await apiPost('lessons', { content: content, context: context, tags: tags });
+        await apiPost('lessons', { content: content, context: context, tags: tags, project: project || undefined });
         state.lessons.loaded = false;
         closeModal();
         loadLessons();
       } else if (type === 'action') {
-        await apiPost('actions/update', { actionId: id, title: (document.querySelector('#modal h3') || {}).textContent || '', description: content });
+        await apiPost('actions/update', { actionId: id, title: (document.querySelector('#modal h3') || {}).textContent || '', description: content, project: project || undefined });
         state.actions.loaded = false;
         closeModal();
         loadActions();
@@ -3397,7 +3406,7 @@
           '<div><a class="empty-link" href="https://github.com/rohitg00/agentmemory#actions" target="_blank" rel="noopener">Action lifecycle docs &rarr;</a></div>' +
           '</div>';
       } else {
-        html += '<table><thead><tr><th>Title</th><th>Status</th><th>Priority</th><th>Tags</th><th>Frontier</th><th>Updated</th><th>Actions</th></tr></thead><tbody>';
+        html += '<table><thead><tr><th>Title</th><th>Status</th><th>Priority</th><th>Tags</th><th>Project</th><th>Frontier</th><th>Updated</th></tr></thead><tbody>';
         items = items.slice().sort(function(a, b) { return (b.priority || 0) - (a.priority || 0); });
         items.forEach(function(a) {
           var statusClass = a.status === 'done' ? 'badge-green' : a.status === 'active' ? 'badge-blue' : a.status === 'blocked' ? 'badge-red' : a.status === 'cancelled' ? 'badge-red' : 'badge-yellow';
@@ -3409,6 +3418,7 @@
           html += '<td><span class="badge ' + statusClass + '">' + esc(a.status) + '</span></td>';
           html += '<td style="text-align:center;font-weight:600;">' + (a.priority || '-') + '</td>';
           html += '<td style="font-size:11px;color:var(--ink-muted);">' + (a.tags || []).map(esc).join(', ') + '</td>';
+          html += '<td style="font-size:12px;color:var(--ink-muted);">' + esc(a.project || '-') + '</td>';
           html += '<td style="text-align:center;">' + (isFrontier ? '&#9889;' : '') + '</td>';
           html += '<td style="font-size:12px;color:var(--ink-muted);">' + shortTime(a.updatedAt) + '</td>';
           html += '</tr>';
