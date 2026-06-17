@@ -7,8 +7,18 @@ import type {
   SnapshotMeta,
   Session,
   Memory,
+  MemorySlot,
   GraphNode,
   AccessLogExport,
+  Lesson,
+  Insight,
+  Action,
+  Crystal,
+  AuditEntry,
+  Signal,
+  Checkpoint,
+  Sketch,
+  Routine,
 } from "../types.js";
 import { KV, generateId } from "../state/schema.js";
 import type { StateKV } from "../state/kv.js";
@@ -48,12 +58,30 @@ export function registerSnapshotFunction(
         await ensureGitRepo(snapshotDir);
         const ts = new Date().toISOString();
 
-        const sessions = await kv.list<Session>(KV.sessions);
+        const rawSessions = await kv.list<Session>(KV.sessions);
+        const sessions = rawSessions.filter((s) => typeof s.id === "string" && s.id.trim().length > 0);
+        if (rawSessions.length !== sessions.length) {
+          logger.warn("Snapshot: dropped sessions with missing id", {
+            dropped: rawSessions.length - sessions.length,
+          });
+        }
         const memories = await kv.list<Memory>(KV.memories);
         const graphNodes = await kv.list<GraphNode>(KV.graphNodes);
         const accessLogs = await kv
           .list<AccessLogExport>(KV.accessLog)
           .catch(() => [] as AccessLogExport[]);
+        const slots = await kv.list<MemorySlot>(KV.slots).catch(() => [] as MemorySlot[]);
+        const globalSlots = await kv.list<MemorySlot>(KV.globalSlots).catch(() => [] as MemorySlot[]);
+        const lessons = await kv.list<Lesson>(KV.lessons).catch(() => [] as Lesson[]);
+        const actions = await kv.list<Action>(KV.actions).catch(() => [] as Action[]);
+        const crystals = await kv.list<Crystal>(KV.crystals).catch(() => [] as Crystal[]);
+        const audit = await kv.list<AuditEntry>(KV.audit).catch(() => [] as AuditEntry[]);
+        const insights = await kv.list<Insight>(KV.insights).catch(() => [] as Insight[]);
+        const signals = await kv.list<Signal>(KV.signals).catch(() => [] as Signal[]);
+        const checkpoints = await kv.list<Checkpoint>(KV.checkpoints).catch(() => [] as Checkpoint[]);
+        const sentinels = await kv.list<Checkpoint>(KV.sentinels).catch(() => [] as Checkpoint[]);
+        const sketches = await kv.list<Sketch>(KV.sketches).catch(() => [] as Sketch[]);
+        const routines = await kv.list<Routine>(KV.routines).catch(() => [] as Routine[]);
 
         const observations: Record<string, unknown[]> = {};
         for (const session of sessions) {
@@ -73,6 +101,18 @@ export function registerSnapshotFunction(
           graphNodes,
           observations,
           accessLogs,
+          slots,
+          globalSlots,
+          lessons,
+          actions,
+          crystals,
+          audit,
+          insights,
+          signals,
+          checkpoints,
+          sentinels,
+          sketches,
+          routines,
         };
 
         writeFileSync(
@@ -110,6 +150,17 @@ export function registerSnapshotFunction(
             ),
             memories: memories.length,
             graphNodes: graphNodes.length,
+            slots: slots.length + globalSlots.length,
+            lessons: lessons.length,
+            actions: actions.length,
+            crystals: crystals.length,
+            audit: audit.length,
+            insights: insights.length,
+            signals: signals.length,
+            checkpoints: checkpoints.length,
+            sentinels: sentinels.length,
+            sketches: sketches.length,
+            routines: routines.length,
           },
         };
 
@@ -174,16 +225,27 @@ export function registerSnapshotFunction(
           sessions?: Array<{ id: string } & Record<string, unknown>>;
           memories?: Array<{ id: string } & Record<string, unknown>>;
           graphNodes?: Array<{ id: string } & Record<string, unknown>>;
-          observations?: Record<
-            string,
-            Array<{ id: string } & Record<string, unknown>>
-          >;
+          observations?: Record<string, Array<{ id: string } & Record<string, unknown>>>;
           accessLogs?: AccessLogExport[];
+          slots?: Array<{ label: string } & Record<string, unknown>>;
+          globalSlots?: Array<{ label: string } & Record<string, unknown>>;
+          lessons?: Array<{ id: string } & Record<string, unknown>>;
+          actions?: Array<{ id: string } & Record<string, unknown>>;
+          crystals?: Array<{ id: string } & Record<string, unknown>>;
+          audit?: Array<{ id: string } & Record<string, unknown>>;
+          insights?: Array<{ id: string } & Record<string, unknown>>;
+          signals?: Array<{ id: string } & Record<string, unknown>>;
+          checkpoints?: Array<{ id: string } & Record<string, unknown>>;
+          sentinels?: Array<{ id: string } & Record<string, unknown>>;
+          sketches?: Array<{ id: string } & Record<string, unknown>>;
+          routines?: Array<{ id: string } & Record<string, unknown>>;
         };
 
         if (state.sessions) {
           for (const session of state.sessions) {
-            await kv.set(KV.sessions, session.id, session);
+            if (typeof session.id === "string" && session.id.trim()) {
+              await kv.set(KV.sessions, session.id, session);
+            }
           }
         }
         if (state.memories) {
@@ -208,6 +270,66 @@ export function registerSnapshotFunction(
             await kv.set(KV.accessLog, log.memoryId, log);
           }
         }
+        if (state.slots) {
+          for (const slot of state.slots) {
+            await kv.set(KV.slots, slot.label, slot);
+          }
+        }
+        if (state.globalSlots) {
+          for (const gs of state.globalSlots) {
+            await kv.set(KV.globalSlots, gs.label, gs);
+          }
+        }
+        if (state.lessons) {
+          for (const lesson of state.lessons) {
+            await kv.set(KV.lessons, lesson.id, lesson);
+          }
+        }
+        if (state.actions) {
+          for (const action of state.actions) {
+            await kv.set(KV.actions, action.id, action);
+          }
+        }
+        if (state.crystals) {
+          for (const crystal of state.crystals) {
+            await kv.set(KV.crystals, crystal.id, crystal);
+          }
+        }
+        if (state.audit) {
+          for (const entry of state.audit) {
+            await kv.set(KV.audit, entry.id, entry);
+          }
+        }
+        if (state.insights) {
+          for (const insight of state.insights) {
+            await kv.set(KV.insights, insight.id, insight);
+          }
+        }
+        if (state.signals) {
+          for (const signal of state.signals) {
+            await kv.set(KV.signals, signal.id, signal);
+          }
+        }
+        if (state.checkpoints) {
+          for (const checkpoint of state.checkpoints) {
+            await kv.set(KV.checkpoints, checkpoint.id, checkpoint);
+          }
+        }
+        if (state.sentinels) {
+          for (const sentinel of state.sentinels) {
+            await kv.set(KV.sentinels, sentinel.id, sentinel);
+          }
+        }
+        if (state.sketches) {
+          for (const sketch of state.sketches) {
+            await kv.set(KV.sketches, sketch.id, sketch);
+          }
+        }
+        if (state.routines) {
+          for (const routine of state.routines) {
+            await kv.set(KV.routines, routine.id, routine);
+          }
+        }
 
         await gitExec(snapshotDir, ["checkout", "HEAD", "--", "state.json"]);
 
@@ -216,6 +338,10 @@ export function registerSnapshotFunction(
           sessions: state.sessions?.length || 0,
           memories: state.memories?.length || 0,
           graphNodes: state.graphNodes?.length || 0,
+          slots: (state.slots?.length || 0) + (state.globalSlots?.length || 0),
+          lessons: state.lessons?.length || 0,
+          actions: state.actions?.length || 0,
+          crystals: state.crystals?.length || 0,
         });
 
         logger.info("Snapshot restored", {
