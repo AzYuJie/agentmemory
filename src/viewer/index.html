@@ -2687,14 +2687,14 @@
                '<span>Source: ' + esc(item.source || '-') + '</span>' +
                '<span>Project: ' + esc(item.project || '-') + '</span>';
         extraFields = '<label>Project</label><textarea id="modal-project" rows="1">' + esc(item.project || '') + '</textarea>'
-                     + '<label>Tags</label><textarea id="modal-tags" rows="2">' + esc((item.tags || []).join(', ')) + '</textarea>';
+                     + '<label>Tags</label><textarea id="modal-tags" rows="2">' + esc((Array.isArray(item.tags) ? item.tags : []).join(', ')) + '</textarea>';
       } else if (type === 'action') {
         contentLabel = 'Description';
         contentField = item.description || '';
         titleField = item.title || '';
         meta = '<span>Status: ' + esc(item.status || '-') + '</span>' +
                '<span>Priority: ' + (item.priority || '-') + '</span>' +
-               '<span>Tags: ' + esc((item.tags || []).join(', ')) + '</span>' +
+               '<span>Tags: ' + esc((Array.isArray(item.tags) ? item.tags : []).join(', ')) + '</span>' +
                '<span>Project: ' + esc(item.project || '-') + '</span>';
         extraFields = '<label>Project</label><textarea id="modal-project" rows="1">' + esc(item.project || '') + '</textarea>';
       } else if (type === 'crystal') {
@@ -3313,7 +3313,7 @@
 
       if (search) {
         items = items.filter(function(l) {
-          return (l.content + ' ' + l.context + ' ' + (l.tags || []).join(' ')).toLowerCase().indexOf(search) >= 0;
+          return (l.content + ' ' + l.context + ' ' + (Array.isArray(l.tags) ? l.tags : []).join(' ')).toLowerCase().indexOf(search) >= 0;
         });
       }
 
