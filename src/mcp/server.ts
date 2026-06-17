@@ -126,6 +126,7 @@ export function registerMcpEndpoints(
               limit: typeof args.limit === "number" ? args.limit : 10,
               format,
               token_budget: tokenBudget,
+              project: typeof args.project === "string" ? (args.project as string) : undefined,
               agentId: recallAgentId,
             } });
             const text =
@@ -279,6 +280,7 @@ export function registerMcpEndpoints(
                 query: args.query,
                 expandIds,
                 limit,
+                project: typeof args.project === "string" ? (args.project as string) : undefined,
               },
             });
             return {

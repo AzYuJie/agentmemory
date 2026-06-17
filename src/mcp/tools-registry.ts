@@ -32,6 +32,10 @@ export const CORE_TOOLS: McpToolDef[] = [
           type: "number",
           description: "Optional token budget to trim returned results",
         },
+        project: {
+          type: "string",
+          description: "按项目标识符过滤结果（精确匹配）",
+        },
       },
       required: ["query"],
     },
@@ -130,6 +134,10 @@ export const CORE_TOOLS: McpToolDef[] = [
           description: "Comma-separated observation IDs to expand",
         },
         limit: { type: "number", description: "Max results (default 10)" },
+        project: {
+          type: "string",
+          description: "按项目标识符过滤结果",
+        },
       },
       required: ["query"],
     },
