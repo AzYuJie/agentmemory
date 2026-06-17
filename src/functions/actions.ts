@@ -264,6 +264,36 @@ export function registerActionsFunction(sdk: ISdk, kv: StateKV): void {
       return { success: true, action, edges, children };
     },
   );
+
+  sdk.registerFunction("mem::action-delete",
+    async (data: { actionId: string }) => {
+      if (!data.actionId || typeof data.actionId !== "string") {
+        return { success: false, error: "actionId is required" };
+      }
+
+      return withKeyedLock("mem:actions", async () => {
+        const action = await kv.get<Action>(KV.actions, data.actionId);
+        if (!action) {
+          return { success: false, error: "action not found" };
+        }
+
+        const allEdges = await kv.list<ActionEdge>(KV.actionEdges);
+        const relatedEdges = allEdges.filter(
+          (e) => e.sourceActionId === data.actionId || e.targetActionId === data.actionId,
+        );
+        await Promise.all(relatedEdges.map((e) => kv.del(KV.actionEdges, e.id)));
+        await kv.del(KV.actions, data.actionId);
+
+        await recordAudit(kv, {
+          operation: "action_delete",
+          targetId: data.actionId,
+          details: { title: action.title, removedEdges: relatedEdges.length },
+        });
+
+        return { success: true, removedEdges: relatedEdges.length };
+      });
+    },
+  );
 }
 
 async function propagateCompletion(

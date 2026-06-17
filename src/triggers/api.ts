@@ -2267,6 +2267,23 @@ export function registerApiTriggers(
     config: { api_path: "/agentmemory/actions/update", http_method: "POST" },
   });
 
+  sdk.registerFunction("api::action-delete",
+    async (req: ApiRequest<{ actionId: string }>): Promise<Response> => {
+      const authErr = checkAuth(req, secret);
+      if (authErr) return authErr;
+      if (!req.body?.actionId) {
+        return { status_code: 400, body: { error: "actionId is required" } };
+      }
+      const result = await sdk.trigger({ function_id: "mem::action-delete", payload: { actionId: req.body.actionId } });
+      return { status_code: 200, body: result };
+    },
+  );
+  sdk.registerTrigger({
+    type: "http",
+    function_id: "api::action-delete",
+    config: { api_path: "/agentmemory/actions", http_method: "DELETE" },
+  });
+
   sdk.registerFunction("api::action-list", 
     async (req: ApiRequest): Promise<Response> => {
       const authErr = checkAuth(req, secret);

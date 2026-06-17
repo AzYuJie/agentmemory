@@ -718,6 +718,29 @@ export function registerMcpEndpoints(
             };
           }
 
+          case "memory_action_delete": {
+            if (typeof args.actionIds !== "string" || !args.actionIds.trim()) {
+              return {
+                status_code: 400,
+                body: { error: "actionIds is required" },
+              };
+            }
+            const ids = args.actionIds.split(",").map((s: string) => s.trim()).filter(Boolean);
+            const results: Array<{ actionId: string; success: boolean; removedEdges?: number; error?: string }> = [];
+            for (const actionId of ids) {
+              const deleteResult = await sdk.trigger({ function_id: "mem::action-delete", payload: { actionId } });
+              results.push({ actionId, ...(deleteResult as any) });
+            }
+            return {
+              status_code: 200,
+              body: {
+                content: [
+                  { type: "text", text: JSON.stringify({ results }, null, 2) },
+                ],
+              },
+            };
+          }
+
           case "memory_frontier": {
             const frontierResult = await sdk.trigger({ function_id: "mem::frontier", payload: {
               project: args.project,

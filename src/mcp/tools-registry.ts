@@ -422,6 +422,18 @@ export const V050_TOOLS: McpToolDef[] = [
     },
   },
   {
+    name: "memory_action_delete",
+    description:
+      "Delete an action and its associated edges. Accepts comma-separated action IDs for batch deletion.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        actionIds: { type: "string", description: "Comma-separated action IDs to delete" },
+      },
+      required: ["actionIds"],
+    },
+  },
+  {
     name: "memory_frontier",
     description:
       "Get all unblocked actions ranked by priority and urgency. Returns the frontier of actionable work with no unsatisfied dependencies.",
