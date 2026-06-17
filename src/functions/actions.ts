@@ -35,7 +35,11 @@ export function registerActionsFunction(sdk: ISdk, kv: StateKV): void {
           updatedAt: now,
           createdBy: data.createdBy || "unknown",
           project: data.project,
-          tags: data.tags || [],
+          tags: Array.isArray(data.tags)
+          ? data.tags
+          : typeof data.tags === "string"
+            ? data.tags.split(",").map((t: string) => t.trim()).filter(Boolean)
+            : [],
           sourceObservationIds: data.sourceObservationIds || [],
           sourceMemoryIds: data.sourceMemoryIds || [],
           parentId: data.parentId,
