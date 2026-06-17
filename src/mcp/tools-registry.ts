@@ -800,6 +800,25 @@ export const V070_TOOLS: McpToolDef[] = [
     },
   },
   {
+    name: "memory_lesson_delete",
+    description:
+      "Delete lessons by ID. Accepts comma-separated lesson IDs. Soft-deletes (marks deleted=true). Returns count of deleted, notFound, and alreadyDeleted.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        ids: {
+          type: "string",
+          description: "Comma-separated lesson IDs to delete",
+        },
+        reason: {
+          type: "string",
+          description: "Reason for deletion (audit trail)",
+        },
+      },
+      required: ["ids"],
+    },
+  },
+  {
     name: "memory_obsidian_export",
     description:
       "Export memories, lessons, and crystals as Obsidian-compatible Markdown files with YAML frontmatter and wikilinks for graph view.",

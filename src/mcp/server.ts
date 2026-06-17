@@ -1109,6 +1109,17 @@ export function registerMcpEndpoints(
             return { status_code: 200, body: { content: [{ type: "text", text: JSON.stringify(lessonSaveResult, null, 2) }] } };
           }
 
+          case "memory_lesson_delete": {
+            if (typeof args.ids !== "string" || !args.ids.trim()) {
+              return { status_code: 400, body: { error: "ids is required (comma-separated lesson IDs)" } };
+            }
+            const lessonDeleteResult = await sdk.trigger({ function_id: "mem::lesson-delete", payload: {
+              ids: args.ids,
+              reason: args.reason || "",
+            } });
+            return { status_code: 200, body: { content: [{ type: "text", text: JSON.stringify(lessonDeleteResult, null, 2) }] } };
+          }
+
           case "memory_lesson_recall": {
             if (typeof args.query !== "string" || !args.query.trim()) {
               return { status_code: 400, body: { error: "query is required" } };

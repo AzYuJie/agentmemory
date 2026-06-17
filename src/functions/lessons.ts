@@ -203,6 +203,58 @@ export function registerLessonsFunctions(sdk: ISdk, kv: StateKV): void {
     },
   );
 
+  sdk.registerFunction("mem::lesson-delete",
+    async (data: {
+      ids: string;
+      reason?: string;
+    }) => {
+      if (!data.ids?.trim()) {
+        return { success: false, error: "ids is required (comma-separated lesson IDs)" };
+      }
+
+      const ids = data.ids.split(",").map((id) => id.trim()).filter(Boolean);
+      if (ids.length === 0) {
+        return { success: false, error: "no valid lesson IDs provided" };
+      }
+
+      let deleted = 0;
+      const notFound: string[] = [];
+      const alreadyDeleted: string[] = [];
+
+      for (const id of ids) {
+        const lesson = await kv.get<Lesson>(KV.lessons, id);
+        if (!lesson) {
+          notFound.push(id);
+          continue;
+        }
+        if (lesson.deleted) {
+          alreadyDeleted.push(id);
+          continue;
+        }
+        lesson.deleted = true;
+        lesson.updatedAt = new Date().toISOString();
+        await kv.set(KV.lessons, lesson.id, lesson);
+        deleted++;
+      }
+
+      if (deleted > 0) {
+        try {
+          await recordAudit(kv, "lesson_delete", "mem::lesson-delete", ids, {
+            reason: data.reason || "manual deletion",
+          });
+        } catch {}
+      }
+
+      return {
+        success: true,
+        deleted,
+        total: ids.length,
+        notFound: notFound.length > 0 ? notFound : undefined,
+        alreadyDeleted: alreadyDeleted.length > 0 ? alreadyDeleted : undefined,
+      };
+    },
+  );
+
   sdk.registerFunction("mem::lesson-decay-sweep", 
     async () => {
       const lessons = await kv.list<Lesson>(KV.lessons);
