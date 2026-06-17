@@ -634,6 +634,17 @@ export interface SnapshotMeta {
     observations: number;
     memories: number;
     graphNodes: number;
+    slots: number;
+    lessons: number;
+    actions: number;
+    crystals: number;
+    audit: number;
+    insights: number;
+    signals: number;
+    checkpoints: number;
+    sentinels: number;
+    sketches: number;
+    routines: number;
   };
 }
 
