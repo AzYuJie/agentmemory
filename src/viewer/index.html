@@ -1066,51 +1066,6 @@
     if (dateEl) dateEl.textContent = new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
 
     function isDarkMode() { return document.documentElement.dataset.theme === 'dark'; }
-    function applyTheme(dark, persist) {
-      document.documentElement.dataset.theme = dark ? 'dark' : 'light';
-      var btn = document.getElementById('theme-toggle');
-      if (btn) btn.textContent = dark ? t('theme.light') : t('theme.dark');
-      if (persist) localStorage.setItem('agentmemory-theme', dark ? 'dark' : 'light');
-    }
-    window.toggleTheme = function() { applyTheme(!isDarkMode(), true); };
-    var savedTheme = localStorage.getItem('agentmemory-theme');
-    if (savedTheme) {
-      applyTheme(savedTheme === 'dark', false);
-    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      applyTheme(true, false);
-    }
-
-    var NODE_COLORS = {
-      file: '#2D6A4F', function: '#1D4E89', concept: '#B8860B', error: '#CC0000',
-      decision: '#6B3FA0', pattern: '#2563EB', library: '#C2410C', person: '#111111'
-    };
-    var OP_BADGES = {
-      observe: 'badge-blue', compress: 'badge-cyan', remember: 'badge-green',
-      forget: 'badge-red', evolve: 'badge-purple', consolidate: 'badge-yellow',
-      share: 'badge-orange', delete: 'badge-red', import: 'badge-blue', export: 'badge-blue'
-    };
-    var TYPE_BADGES = {
-      pattern: 'badge-purple', preference: 'badge-blue', architecture: 'badge-cyan',
-      bug: 'badge-red', workflow: 'badge-green', fact: 'badge-yellow'
-    };
-    var OBS_TYPE_COLORS = {
-      file_read: '#1D4E89', file_write: '#2D6A4F', file_edit: '#B8860B',
-      command_run: '#C2410C', search: '#2563EB', web_fetch: '#6B3FA0',
-      conversation: '#111111', error: '#CC0000', decision: '#B8860B',
-      discovery: '#2D6A4F', subagent: '#6B3FA0', notification: '#0E7490',
-      task: '#1D4E89', other: '#666666'
-    };
-    var OBS_TYPE_ICONS = {
-      file_read: '&#128196;', file_write: '&#9999;', file_edit: '&#128221;',
-      command_run: '&#9889;', search: '&#128270;', web_fetch: '&#127760;',
-      conversation: '&#128172;', error: '&#9888;', decision: '&#129300;',
-      discovery: '&#128161;', subagent: '&#129302;', notification: '&#128276;',
-      task: '&#9745;', other: '&#128196;'
-    };
-    var CB_STATE_COLORS = { closed: 'badge-green', open: 'badge-red', 'half-open': 'badge-yellow' };
-    var TAB_IDS = ['dashboard', 'graph', 'memories', 'timeline', 'sessions', 'lessons', 'actions', 'crystals', 'audit', 'activity', 'profile', 'replay', 'slots'];
-    var VIEWER_TOKEN_STORAGE_KEY = 'agentmemory-viewer-token';
-
     var I18N = {
       en: {
         'tab.dashboard':'Dashboard','tab.slots':'Slots','tab.graph':'Graph','tab.memories':'Memories','tab.timeline':'Timeline','tab.sessions':'Sessions','tab.lessons':'Lessons','tab.actions':'Actions','tab.crystals':'Crystals','tab.audit':'Audit','tab.activity':'Activity','tab.profile':'Profile','tab.replay':'Replay',
@@ -1157,6 +1112,52 @@
     };
     var currentLang = localStorage.getItem('agentmemory-viewer-lang') || 'en';
     function t(key){ return (I18N[currentLang] && I18N[currentLang][key]) || I18N.en[key] || key; }
+
+    function applyTheme(dark, persist) {
+      document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+      var btn = document.getElementById('theme-toggle');
+      if (btn) btn.textContent = dark ? t('theme.light') : t('theme.dark');
+      if (persist) localStorage.setItem('agentmemory-theme', dark ? 'dark' : 'light');
+    }
+    window.toggleTheme = function() { applyTheme(!isDarkMode(), true); };
+    var savedTheme = localStorage.getItem('agentmemory-theme');
+    if (savedTheme) {
+      applyTheme(savedTheme === 'dark', false);
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      applyTheme(true, false);
+    }
+
+    var NODE_COLORS = {
+      file: '#2D6A4F', function: '#1D4E89', concept: '#B8860B', error: '#CC0000',
+      decision: '#6B3FA0', pattern: '#2563EB', library: '#C2410C', person: '#111111'
+    };
+    var OP_BADGES = {
+      observe: 'badge-blue', compress: 'badge-cyan', remember: 'badge-green',
+      forget: 'badge-red', evolve: 'badge-purple', consolidate: 'badge-yellow',
+      share: 'badge-orange', delete: 'badge-red', import: 'badge-blue', export: 'badge-blue'
+    };
+    var TYPE_BADGES = {
+      pattern: 'badge-purple', preference: 'badge-blue', architecture: 'badge-cyan',
+      bug: 'badge-red', workflow: 'badge-green', fact: 'badge-yellow'
+    };
+    var OBS_TYPE_COLORS = {
+      file_read: '#1D4E89', file_write: '#2D6A4F', file_edit: '#B8860B',
+      command_run: '#C2410C', search: '#2563EB', web_fetch: '#6B3FA0',
+      conversation: '#111111', error: '#CC0000', decision: '#B8860B',
+      discovery: '#2D6A4F', subagent: '#6B3FA0', notification: '#0E7490',
+      task: '#1D4E89', other: '#666666'
+    };
+    var OBS_TYPE_ICONS = {
+      file_read: '&#128196;', file_write: '&#9999;', file_edit: '&#128221;',
+      command_run: '&#9889;', search: '&#128270;', web_fetch: '&#127760;',
+      conversation: '&#128172;', error: '&#9888;', decision: '&#129300;',
+      discovery: '&#128161;', subagent: '&#129302;', notification: '&#128276;',
+      task: '&#9745;', other: '&#128196;'
+    };
+    var CB_STATE_COLORS = { closed: 'badge-green', open: 'badge-red', 'half-open': 'badge-yellow' };
+    var TAB_IDS = ['dashboard', 'graph', 'memories', 'timeline', 'sessions', 'lessons', 'actions', 'crystals', 'audit', 'activity', 'profile', 'replay', 'slots'];
+    var VIEWER_TOKEN_STORAGE_KEY = 'agentmemory-viewer-token';
+
     function applyI18n(){
       document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : 'en';
       document.querySelectorAll('[data-i18n]').forEach(function(el){ el.textContent = t(el.getAttribute('data-i18n')); });
