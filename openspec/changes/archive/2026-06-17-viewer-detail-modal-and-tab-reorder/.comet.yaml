@@ -1,5 +1,5 @@
 workflow: tweak
-phase: verify
+phase: archive
 context_compression: off
 build_mode: direct
 build_pause: null
@@ -8,12 +8,12 @@ tdd_mode: direct
 isolation: branch
 verify_mode: light
 auto_transition: true
-base_ref: 6be307ba18be6feb5bbcb8baa01d2cd176213aad
+base_ref: 68baa24111ca42a891e76efb6dac6984e637ce8a
 design_doc: null
 plan: null
-verify_result: pending
-verification_report: docs/superpowers/reports/2026-06-17-add-slots-page-and-project-filter-verify.md
+verify_result: pass
+verification_report: docs/superpowers/reports/2026-06-17-viewer-detail-modal-and-tab-reorder-verify.md
 branch_status: handled
 created_at: 2026-06-17
-verified_at: null
-archived: false
+verified_at: 2026-06-17
+archived: true

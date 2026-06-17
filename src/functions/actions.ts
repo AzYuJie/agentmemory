@@ -281,8 +281,8 @@ export function registerActionsFunction(sdk: ISdk, kv: StateKV): void {
         const relatedEdges = allEdges.filter(
           (e) => e.sourceActionId === data.actionId || e.targetActionId === data.actionId,
         );
-        await Promise.all(relatedEdges.map((e) => kv.del(KV.actionEdges, e.id)));
-        await kv.del(KV.actions, data.actionId);
+        await Promise.all(relatedEdges.map((e) => kv.delete(KV.actionEdges, e.id)));
+        await kv.delete(KV.actions, data.actionId);
 
         await recordAudit(kv, {
           operation: "action_delete",
