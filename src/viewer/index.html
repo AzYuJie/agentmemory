@@ -3332,6 +3332,7 @@
           var confPct = Math.round(l.confidence * 100);
           var confColor = confPct >= 70 ? 'var(--green)' : confPct >= 40 ? 'var(--yellow)' : 'var(--red)';
           html += '<tr data-detail-type="lesson" data-detail-id="' + esc(l.id) + '" style="cursor:pointer">';
+          html += '<td style="max-width:400px;">' + esc(truncate(l.content, 120)) + (l.context ? '<div style="font-size:11px;color:var(--ink-faint);margin-top:2px;">' + esc(truncate(l.context, 80)) + '</div>' : '') + '</td>';
           html += '<td><div class="gauge" style="min-width:80px;"><div class="gauge-bar"><div class="gauge-fill" style="width:' + confPct + '%;background:' + confColor + '"></div></div><span class="gauge-value" style="font-size:11px;">' + confPct + '%</span></div></td>';
           html += '<td style="text-align:center;">' + (l.reinforcements || 0) + '</td>';
           html += '<td><span class="badge badge-' + (l.source === 'crystal' ? 'purple' : l.source === 'consolidation' ? 'yellow' : 'blue') + '">' + esc(l.source) + '</span></td>';
