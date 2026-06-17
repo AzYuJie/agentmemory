@@ -2591,7 +2591,7 @@
           var strength = Math.round(rawStrength <= 1 ? rawStrength * 100 : rawStrength * 10);
           if (strength > 100) strength = 100;
           var barColor = strength > 70 ? 'var(--green)' : strength > 40 ? 'var(--yellow)' : 'var(--red)';
-          html += '<tr>';
+          html += '<tr data-detail-type="memory" data-detail-id="' + esc(m.id) + '" style="cursor:pointer">';
           var preview = (m.content || '').split('\n').slice(0, 2).join(' ').trim();
           var previewHtml = esc(truncate(preview, 150));
           if (search && search.length > 2) {
@@ -2610,7 +2610,7 @@
           html += '<td><div class="strength-bar"><div class="fill" style="width:' + strength + '%;background:' + barColor + '"></div></div> <span style="font-size:10px;color:var(--ink-faint);font-family:var(--font-mono);">' + strength + '%</span></td>';
           html += '<td style="color:var(--ink-muted);font-family:var(--font-mono);font-size:12px;">v' + (m.version || 1) + '</td>';
           html += '<td style="font-size:11px;color:var(--ink-faint);font-family:var(--font-mono);">' + esc(formatTime(m.updatedAt)) + '</td>';
-          html += '<td><button class="btn" style="font-size:9px;padding:2px 8px;margin-right:4px;" data-action="show-detail" data-type="memory" data-id="' + esc(m.id) + '">' + (currentLang === 'zh' ? '详情' : 'Detail') + '</button><button class="btn btn-danger" style="font-size:9px;padding:2px 8px;" data-action="delete-memory" data-memory-id="' + esc(m.id) + '" data-memory-title="' + esc(m.title || '') + '">Delete</button></td>';
+          html += '<td><button class="btn btn-danger" style="font-size:9px;padding:2px 8px;" data-action="delete-memory" data-memory-id="' + esc(m.id) + '" data-memory-title="' + esc(m.title || '') + '">Delete</button></td>';
           html += '</tr>';
         });
         html += '</table>';
@@ -3331,14 +3331,12 @@
         items.forEach(function(l) {
           var confPct = Math.round(l.confidence * 100);
           var confColor = confPct >= 70 ? 'var(--green)' : confPct >= 40 ? 'var(--yellow)' : 'var(--red)';
-          html += '<tr>';
-          html += '<td style="max-width:400px;">' + esc(truncate(l.content, 120)) + (l.context ? '<div style="font-size:11px;color:var(--ink-faint);margin-top:2px;">' + esc(truncate(l.context, 80)) + '</div>' : '') + '</td>';
+          html += '<tr data-detail-type="lesson" data-detail-id="' + esc(l.id) + '" style="cursor:pointer">';
           html += '<td><div class="gauge" style="min-width:80px;"><div class="gauge-bar"><div class="gauge-fill" style="width:' + confPct + '%;background:' + confColor + '"></div></div><span class="gauge-value" style="font-size:11px;">' + confPct + '%</span></div></td>';
           html += '<td style="text-align:center;">' + (l.reinforcements || 0) + '</td>';
           html += '<td><span class="badge badge-' + (l.source === 'crystal' ? 'purple' : l.source === 'consolidation' ? 'yellow' : 'blue') + '">' + esc(l.source) + '</span></td>';
           html += '<td style="font-size:12px;color:var(--ink-muted);">' + esc(l.project || '-') + '</td>';
           html += '<td style="font-size:12px;color:var(--ink-muted);">' + shortTime(l.updatedAt) + '</td>';
-          html += '<td><button class="btn" style="font-size:9px;padding:2px 8px;" data-action="show-detail" data-type="lesson" data-id="' + esc(l.id) + '">' + (currentLang === 'zh' ? '详情' : 'Detail') + '</button></td>';
           html += '</tr>';
         });
         html += '</tbody></table>';
@@ -3403,7 +3401,7 @@
         items.forEach(function(a) {
           var statusClass = a.status === 'done' ? 'badge-green' : a.status === 'active' ? 'badge-blue' : a.status === 'blocked' ? 'badge-red' : a.status === 'cancelled' ? 'badge-red' : 'badge-yellow';
           var isFrontier = frontierIds.has(a.id);
-          html += '<tr' + (isFrontier ? ' style="background:rgba(45,106,79,0.08);"' : '') + '>';
+          html += '<tr' + ' data-detail-type="action" data-detail-id="' + esc(a.id) + '"' + (isFrontier ? ' style="background:rgba(45,106,79,0.08);cursor:pointer"' : ' style="cursor:pointer"') + '>';
           html += '<td style="max-width:350px;"><strong>' + esc(a.title) + '</strong>';
           if (a.description) html += '<div style="font-size:11px;color:var(--ink-faint);margin-top:2px;">' + esc(truncate(a.description, 80)) + '</div>';
           html += '</td>';
@@ -3412,7 +3410,6 @@
           html += '<td style="font-size:11px;color:var(--ink-muted);">' + (a.tags || []).map(esc).join(', ') + '</td>';
           html += '<td style="text-align:center;">' + (isFrontier ? '&#9889;' : '') + '</td>';
           html += '<td style="font-size:12px;color:var(--ink-muted);">' + shortTime(a.updatedAt) + '</td>';
-          html += '<td><button class="btn" style="font-size:9px;padding:2px 8px;" data-action="show-detail" data-type="action" data-id="' + esc(a.id) + '">' + (currentLang === 'zh' ? '详情' : 'Detail') + '</button></td>';
           html += '</tr>';
         });
         html += '</tbody></table>';
@@ -3486,11 +3483,10 @@
           '</div>';
       } else {
         items.forEach(function(c) {
-          html += '<div class="card" style="margin-bottom:12px;border-left:3px solid var(--accent);">';
+          html += '<div class="card" style="margin-bottom:12px;border-left:3px solid var(--accent);cursor:pointer;" data-detail-type="crystal" data-detail-id="' + esc(c.id) + '">';
           html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px;">';
           html += '<div style="flex:1;font-size:14px;font-weight:600;color:var(--ink);line-height:1.4;">' + esc(truncate(c.narrative || 'Untitled crystal', 300)) + '</div>';
           html += '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">';
-          html += '<button class="btn" style="font-size:9px;padding:2px 8px;" data-action="show-detail" data-type="crystal" data-id="' + esc(c.id) + '">' + (currentLang === 'zh' ? '详情' : 'Detail') + '</button>';
           html += '<div style="font-size:10px;color:var(--ink-faint);font-family:var(--font-mono);white-space:nowrap;">' + esc(formatTime(c.createdAt)) + '</div>';
           html += '</div>';
           html += '</div>';
@@ -4127,12 +4123,6 @@
         if (detailType) saveDetail(detailType, detailId);
         return;
       }
-      if (action === 'show-detail') {
-        var detailType = target.getAttribute('data-type');
-        var detailId = target.getAttribute('data-id');
-        showDetailForId(detailType, detailId);
-        return;
-      }
       if (action === 'confirm-delete-memory') {
         var memoryId = target.getAttribute('data-memory-id');
         if (memoryId) confirmDeleteMemory(memoryId);
@@ -4206,6 +4196,15 @@
     });
     document.getElementById('modal-overlay').addEventListener('click', function(e) {
       if (e.target === this) closeModal();
+    });
+
+    // Double-click to show detail modal for memories/lessons/actions/crystals
+    document.addEventListener('dblclick', function(e) {
+      var row = e.target.closest('[data-detail-type]');
+      if (!row) return;
+      // Don't trigger on buttons/inputs inside the row or on the modal overlay
+      if (e.target.closest('button, input, select, textarea, .modal-overlay')) return;
+      showDetailForId(row.getAttribute('data-detail-type'), row.getAttribute('data-detail-id'));
     });
 
     async function loadReplay() {
