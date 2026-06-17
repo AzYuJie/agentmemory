@@ -856,6 +856,11 @@
       width: 90%;
       box-shadow: 6px 6px 0px 0px var(--border);
     }
+    .modal-wide {
+      max-width: 680px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
     .modal h3 {
       font-size: 18px;
       font-weight: 700;
@@ -864,10 +869,49 @@
       font-family: var(--font-display);
     }
     .modal p { font-size: 13px; color: var(--ink-muted); margin-bottom: 16px; }
+    .modal label {
+      display: block;
+      font-size: 10px;
+      color: var(--ink-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 4px;
+      margin-top: 12px;
+      font-family: var(--font-ui);
+      font-weight: 600;
+    }
+    .modal label:first-of-type { margin-top: 0; }
+    .modal textarea {
+      width: 100%;
+      min-height: 120px;
+      padding: 8px 10px;
+      font-size: 13px;
+      font-family: var(--font-body);
+      border: 1px solid var(--border-light);
+      background: var(--bg-alt);
+      color: var(--ink);
+      resize: vertical;
+      line-height: 1.5;
+    }
+    .modal textarea:focus {
+      border-color: var(--ink);
+      outline: none;
+      box-shadow: 2px 2px 0px 0px var(--border);
+    }
+    .modal .detail-meta {
+      font-size: 12px;
+      color: var(--ink-muted);
+      margin-bottom: 8px;
+      font-family: var(--font-ui);
+    }
+    .modal .detail-meta span {
+      margin-right: 12px;
+    }
     .modal-actions {
       display: flex;
       justify-content: flex-end;
       gap: 8px;
+      margin-top: 16px;
     }
     .selected-node-info {
       margin-top: 16px;
@@ -990,8 +1034,8 @@
 
   <div class="tab-bar" id="tab-bar">
     <button class="active" data-tab="dashboard" aria-current="page" data-i18n="tab.dashboard">Dashboard</button>
-    <button data-tab="slots" data-i18n="tab.slots">Slots</button>
     <button data-tab="graph" data-i18n="tab.graph">Graph</button>
+    <button data-tab="slots" data-i18n="tab.slots">Slots</button>
     <button data-tab="memories" data-i18n="tab.memories">Memories</button>
     <button data-tab="timeline" data-i18n="tab.timeline">Timeline</button>
     <button data-tab="sessions" data-i18n="tab.sessions">Sessions</button>
@@ -1155,7 +1199,7 @@
       task: '&#9745;', other: '&#128196;'
     };
     var CB_STATE_COLORS = { closed: 'badge-green', open: 'badge-red', 'half-open': 'badge-yellow' };
-    var TAB_IDS = ['dashboard', 'graph', 'memories', 'timeline', 'sessions', 'lessons', 'actions', 'crystals', 'audit', 'activity', 'profile', 'replay', 'slots'];
+    var TAB_IDS = ['dashboard', 'graph', 'slots', 'memories', 'timeline', 'sessions', 'lessons', 'actions', 'crystals', 'audit', 'activity', 'profile', 'replay'];
     var VIEWER_TOKEN_STORAGE_KEY = 'agentmemory-viewer-token';
 
     function applyI18n(){
@@ -2566,7 +2610,7 @@
           html += '<td><div class="strength-bar"><div class="fill" style="width:' + strength + '%;background:' + barColor + '"></div></div> <span style="font-size:10px;color:var(--ink-faint);font-family:var(--font-mono);">' + strength + '%</span></td>';
           html += '<td style="color:var(--ink-muted);font-family:var(--font-mono);font-size:12px;">v' + (m.version || 1) + '</td>';
           html += '<td style="font-size:11px;color:var(--ink-faint);font-family:var(--font-mono);">' + esc(formatTime(m.updatedAt)) + '</td>';
-          html += '<td><button class="btn btn-danger" style="font-size:9px;padding:2px 8px;" data-action="delete-memory" data-memory-id="' + esc(m.id) + '" data-memory-title="' + esc(m.title || '') + '">Delete</button></td>';
+          html += '<td><button class="btn" style="font-size:9px;padding:2px 8px;margin-right:4px;" data-action="show-detail" data-type="memory" data-id="' + esc(m.id) + '">' + (currentLang === 'zh' ? '详情' : 'Detail') + '</button><button class="btn btn-danger" style="font-size:9px;padding:2px 8px;" data-action="delete-memory" data-memory-id="' + esc(m.id) + '" data-memory-title="' + esc(m.title || '') + '">Delete</button></td>';
           html += '</tr>';
         });
         html += '</table>';
@@ -2604,7 +2648,114 @@
     }
 
     function closeModal() {
-      document.getElementById('modal-overlay').classList.remove('open');
+      var overlay = document.getElementById('modal-overlay');
+      var modal = document.getElementById('modal');
+      overlay.classList.remove('open');
+      if (modal) modal.classList.remove('modal-wide');
+    }
+
+    function showDetailModal(type, item) {
+      var modal = document.getElementById('modal');
+      var overlay = document.getElementById('modal-overlay');
+      modal.classList.add('modal-wide');
+
+      var contentLabel = '';
+      var contentField = '';
+      var titleField = '';
+      var typeField = '';
+      var extraFields = '';
+      var canEdit = true;
+      var meta = '';
+
+      if (type === 'memory') {
+        contentLabel = 'Content';
+        contentField = item.content || '';
+        titleField = item.title || '';
+        typeField = item.type || '';
+        meta = '<span>Type: ' + esc(item.type || '-') + '</span>' +
+               '<span>v' + (item.version || 1) + '</span>' +
+               '<span>Strength: ' + (Math.round((item.strength || 0) * 100)) + '%</span>';
+      } else if (type === 'lesson') {
+        contentLabel = 'Lesson';
+        contentField = item.content || '';
+        titleField = item.context || '';
+        meta = '<span>Confidence: ' + Math.round((item.confidence || 0) * 100) + '%</span>' +
+               '<span>Reinforcements: ' + (item.reinforcements || 0) + '</span>' +
+               '<span>Source: ' + esc(item.source || '-') + '</span>';
+        extraFields = '<label>Tags</label><textarea id="modal-tags" rows="2">' + esc((item.tags || []).join(', ')) + '</textarea>';
+      } else if (type === 'action') {
+        contentLabel = 'Description';
+        contentField = item.description || '';
+        titleField = item.title || '';
+        meta = '<span>Status: ' + esc(item.status || '-') + '</span>' +
+               '<span>Priority: ' + (item.priority || '-') + '</span>' +
+               '<span>Tags: ' + esc((item.tags || []).join(', ')) + '</span>';
+      } else if (type === 'crystal') {
+        canEdit = false;
+        contentLabel = 'Narrative';
+        contentField = item.narrative || '';
+        titleField = (item.narrative || '').split('\n')[0].slice(0, 80) || 'Untitled';
+        meta = '<span>Project: ' + esc(item.project || '-') + '</span>' +
+               '<span>Session: ' + esc((item.sessionId || '').slice(0, 14)) + '</span>' +
+               '<span>Tools: ' + (item.keyOutcomes || []).length + '</span>';
+        extraFields = '<label>Key Outcomes</label><textarea readonly rows="4">' + esc((item.keyOutcomes || []).join('\n')) + '</textarea>' +
+                      '<label>Files Affected</label><textarea readonly rows="4">' + esc((item.filesAffected || []).join('\n')) + '</textarea>';
+      }
+
+      var html = '<h3>' + esc(titleField.slice(0, 80) || type) + '</h3>';
+      html += '<div class="detail-meta">' + meta + '</div>';
+      html += '<label>' + contentLabel + '</label>';
+      html += '<textarea id="modal-content"' + (canEdit ? '' : ' readonly') + ' rows="6">' + esc(contentField) + '</textarea>';
+      html += extraFields;
+      html += '<div class="modal-actions">';
+      html += '<button class="btn" data-action="close-modal">Cancel</button>';
+      if (canEdit) {
+        html += '<button class="btn btn-primary" data-action="save-detail" data-type="' + esc(type) + '" data-id="' + esc(item.id || '') + '">Save</button>';
+      }
+      html += '</div>';
+
+      modal.innerHTML = html;
+      overlay.classList.add('open');
+    }
+
+    async function saveDetail(type, id) {
+      var contentEl = document.getElementById('modal-content');
+      var content = contentEl ? contentEl.value : '';
+
+      if (type === 'memory') {
+        var title = (document.querySelector('#modal h3') || {}).textContent || '';
+        await apiPost('remember', { title: title, content: content, type: 'fact' });
+        state.memories.loaded = false;
+        closeModal();
+        loadMemories();
+      } else if (type === 'lesson') {
+        var tagsEl = document.getElementById('modal-tags');
+        var tags = tagsEl ? tagsEl.value.split(',').map(function(t) { return t.trim(); }).filter(Boolean) : [];
+        var context = (document.querySelector('#modal h3') || {}).textContent || '';
+        await apiPost('lessons', { content: content, context: context, tags: tags });
+        state.lessons.loaded = false;
+        closeModal();
+        loadLessons();
+      } else if (type === 'action') {
+        await apiPost('actions/update', { actionId: id, title: (document.querySelector('#modal h3') || {}).textContent || '', description: content });
+        state.actions.loaded = false;
+        closeModal();
+        loadActions();
+      }
+    }
+
+    function showDetailForId(type, id) {
+      var item = null;
+      if (type === 'memory') {
+        item = state.memories.items.find(function(m) { return m.id === id; });
+      } else if (type === 'lesson') {
+        item = state.lessons.items.find(function(l) { return l.id === id; });
+      } else if (type === 'action') {
+        item = state.actions.items.find(function(a) { return a.id === id; });
+      } else if (type === 'crystal') {
+        item = state.crystals.items.find(function(c) { return c.id === id; });
+      }
+      if (item) showDetailModal(type, item);
     }
 
     async function loadTimeline() {
@@ -3176,7 +3327,7 @@
           '<div><a class="empty-link" href="https://github.com/rohitg00/agentmemory#lessons" target="_blank" rel="noopener">Lesson decay &amp; scoring &rarr;</a></div>' +
           '</div>';
       } else {
-        html += '<table><thead><tr><th>Lesson</th><th>Confidence</th><th>Reinforcements</th><th>Source</th><th>Project</th><th>Updated</th></tr></thead><tbody>';
+        html += '<table><thead><tr><th>Lesson</th><th>Confidence</th><th>Reinforcements</th><th>Source</th><th>Project</th><th>Updated</th><th>Actions</th></tr></thead><tbody>';
         items.forEach(function(l) {
           var confPct = Math.round(l.confidence * 100);
           var confColor = confPct >= 70 ? 'var(--green)' : confPct >= 40 ? 'var(--yellow)' : 'var(--red)';
@@ -3187,6 +3338,7 @@
           html += '<td><span class="badge badge-' + (l.source === 'crystal' ? 'purple' : l.source === 'consolidation' ? 'yellow' : 'blue') + '">' + esc(l.source) + '</span></td>';
           html += '<td style="font-size:12px;color:var(--ink-muted);">' + esc(l.project || '-') + '</td>';
           html += '<td style="font-size:12px;color:var(--ink-muted);">' + shortTime(l.updatedAt) + '</td>';
+          html += '<td><button class="btn" style="font-size:9px;padding:2px 8px;" data-action="show-detail" data-type="lesson" data-id="' + esc(l.id) + '">' + (currentLang === 'zh' ? '详情' : 'Detail') + '</button></td>';
           html += '</tr>';
         });
         html += '</tbody></table>';
@@ -3246,7 +3398,7 @@
           '<div><a class="empty-link" href="https://github.com/rohitg00/agentmemory#actions" target="_blank" rel="noopener">Action lifecycle docs &rarr;</a></div>' +
           '</div>';
       } else {
-        html += '<table><thead><tr><th>Title</th><th>Status</th><th>Priority</th><th>Tags</th><th>Frontier</th><th>Updated</th></tr></thead><tbody>';
+        html += '<table><thead><tr><th>Title</th><th>Status</th><th>Priority</th><th>Tags</th><th>Frontier</th><th>Updated</th><th>Actions</th></tr></thead><tbody>';
         items = items.slice().sort(function(a, b) { return (b.priority || 0) - (a.priority || 0); });
         items.forEach(function(a) {
           var statusClass = a.status === 'done' ? 'badge-green' : a.status === 'active' ? 'badge-blue' : a.status === 'blocked' ? 'badge-red' : a.status === 'cancelled' ? 'badge-red' : 'badge-yellow';
@@ -3260,6 +3412,7 @@
           html += '<td style="font-size:11px;color:var(--ink-muted);">' + (a.tags || []).map(esc).join(', ') + '</td>';
           html += '<td style="text-align:center;">' + (isFrontier ? '&#9889;' : '') + '</td>';
           html += '<td style="font-size:12px;color:var(--ink-muted);">' + shortTime(a.updatedAt) + '</td>';
+          html += '<td><button class="btn" style="font-size:9px;padding:2px 8px;" data-action="show-detail" data-type="action" data-id="' + esc(a.id) + '">' + (currentLang === 'zh' ? '详情' : 'Detail') + '</button></td>';
           html += '</tr>';
         });
         html += '</tbody></table>';
@@ -3336,7 +3489,10 @@
           html += '<div class="card" style="margin-bottom:12px;border-left:3px solid var(--accent);">';
           html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px;">';
           html += '<div style="flex:1;font-size:14px;font-weight:600;color:var(--ink);line-height:1.4;">' + esc(truncate(c.narrative || 'Untitled crystal', 300)) + '</div>';
+          html += '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">';
+          html += '<button class="btn" style="font-size:9px;padding:2px 8px;" data-action="show-detail" data-type="crystal" data-id="' + esc(c.id) + '">' + (currentLang === 'zh' ? '详情' : 'Detail') + '</button>';
           html += '<div style="font-size:10px;color:var(--ink-faint);font-family:var(--font-mono);white-space:nowrap;">' + esc(formatTime(c.createdAt)) + '</div>';
+          html += '</div>';
           html += '</div>';
 
           var pillRow = [];
@@ -3963,6 +4119,18 @@
       }
       if (action === 'close-modal') {
         closeModal();
+        return;
+      }
+      if (action === 'save-detail') {
+        var detailType = target.getAttribute('data-type');
+        var detailId = target.getAttribute('data-id');
+        if (detailType) saveDetail(detailType, detailId);
+        return;
+      }
+      if (action === 'show-detail') {
+        var detailType = target.getAttribute('data-type');
+        var detailId = target.getAttribute('data-id');
+        showDetailForId(detailType, detailId);
         return;
       }
       if (action === 'confirm-delete-memory') {
