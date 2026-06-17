@@ -156,10 +156,18 @@ function validateSizeLimit(raw: unknown): number | null | undefined {
 
 async function seedDefaults(kv: StateKV): Promise<void> {
   const ts = nowIso();
+  // kv.get 在某些 iii-engine 上下文中不可靠（返回 null 即使数据存在），
+  // 会导致已有 slot 被空模板覆盖。改用 kv.list 一次性获取现有 label 集合。
+  const [projectSlots, globalSlots] = await Promise.all([
+    kv.list<MemorySlot>(KV.slots),
+    kv.list<MemorySlot>(KV.globalSlots),
+  ]);
+  const existingLabels = new Set<string>();
+  for (const s of projectSlots) existingLabels.add(s.label);
+  for (const s of globalSlots) existingLabels.add(s.label);
   for (const tmpl of DEFAULT_SLOTS) {
+    if (existingLabels.has(tmpl.label)) continue;
     const target = scopeKv(tmpl.scope);
-    const existing = await kv.get<MemorySlot>(target, tmpl.label);
-    if (existing) continue;
     const slot: MemorySlot = {
       ...tmpl,
       createdAt: ts,
